@@ -1,26 +1,48 @@
 import logging
 import os
+import requests
 from datetime import datetime
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
-from groq import Groq
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TASHKENT = pytz.timezone('Asia/Tashkent')
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'SIZNING_TELEGRAM_TOKENINGIZ')
-GROQ_KEY = os.environ.get('GROQ_API_KEY', 'SIZNING_GROQ_KALITINGIZ')
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAFKBbfKHU649R0dAUHA_tG2KviVo062W-4')
+TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAHx8Svjqvsl2G-BOr5hNSoCG2T5LEmA9-E')
 GROQ_KEY = os.environ.get('GROQ_API_KEY', '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')
-groq_client = Groq(api_key=GROQ_KEY)
+
 managers = {}
+members = {}
 tasks = {}
 task_counter = [0]
 
 def now_tashkent():
     return datetime.now(TASHKENT).strftime('%d.%m.%Y %H:%M')
+
+def ask_groq(question):
+    try:
+        response = requests.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {GROQ_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'llama-3.3-70b-versatile',
+                'messages': [
+                    {'role': 'system', 'content': f"Sen O'zbek va Rus tillarida javob beradigan aqlli yordamchisan. Hozirgi vaqt Toshkent bo'yicha: {now_tashkent()}. Qisqa va aniq javob ber."},
+                    {'role': 'user', 'content': question}
+                ],
+                'max_tokens': 500
+            },
+            timeout=30
+        )
+        data = response.json()
+        return data['choices'][0]['message']['content']
+    except Exception as e:
+        return f"Xatolik: {str(e)}"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -222,18 +244,8 @@ async def sora(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📝 Foydalanish: /sora <savol>")
         return
     question = ' '.join(context.args)
-    try:
-        response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": f"Sen O'zbek va Rus tillarida javob beradigan aqlli yordamchisan. Hozirgi vaqt Toshkent bo'yicha: {now_tashkent()}. Qisqa va aniq javob ber."},
-                {"role": "user", "content": question}
-            ],
-            max_tokens=500
-        )
-        await update.message.reply_text(f"🤖 {response.choices[0].message.content}")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Xatolik: {str(e)}")
+    javob = ask_groq(question)
+    await update.message.reply_text(f"🤖 {javob}")
 
 async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -251,18 +263,8 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def free_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    try:
-        response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": f"Sen jamoa boshqaruv botining AI yordamchisissan. Hozirgi vaqt (Toshkent): {now_tashkent()}. O'zbek yoki Rus tilida javob ber."},
-                {"role": "user", "content": text}
-            ],
-            max_tokens=500
-        )
-        await update.message.reply_text(f"🤖 {response.choices[0].message.content}")
-    except:
-        await update.message.reply_text("❌ Xatolik yuz berdi.")
+    javob = ask_groq(text)
+    await update.message.reply_text(f"🤖 {javob}")
 
 async def yordam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -284,14 +286,12 @@ async def yordam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode='Markdown')
 
 async def menvazifalar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    user_tasks = {tid: t for tid, t in tasks.items()}
-    if not user_tasks:
+    if not tasks:
         await update.message.reply_text("📋 Sizga vazifa yuklanmagan.")
         return
     status_map = {'done': '✅', 'progress': '🔄', 'notdone': '❌'}
     msg = "📋 *Sizning vazifalaringiz:*\n\n"
-    for tid, t in user_tasks.items():
+    for tid, t in tasks.items():
         msg += f"{status_map.get(t['status'])} *#{tid}* {t['text']}\n\n"
     await update.message.reply_text(msg, parse_mode='Markdown')
 
