@@ -14,8 +14,8 @@ TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'SIZNING_TELEGRAM_TOKENINGIZ')
 GROQ_KEY = os.environ.get('GROQ_API_KEY', 'SIZNING_GROQ_KALITINGIZ')
 TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAFKBbfKHU649R0dAUHA_tG2KviVo062W-4')
 GROQ_KEY = os.environ.get('GROQ_API_KEY', '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')
+groq_client = Groq(api_key=GROQ_KEY)
 managers = {}
-members = {}
 tasks = {}
 task_counter = [0]
 
