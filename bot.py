@@ -13,7 +13,7 @@ TASHKENT = pytz.timezone('Asia/Tashkent')
 TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'SIZNING_TELEGRAM_TOKENINGIZ')
 GROQ_KEY = os.environ.get('GROQ_API_KEY', 'SIZNING_GROQ_KALITINGIZ')
 TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAHx8SvjqvS12G-BOr5hNSoCG2T5LEmA9-E')
-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
+GROQ_KEY = os.environ.get('GROQ_API_KEY', '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')
 managers = {}
 members = {}
 tasks = {}
