@@ -10,10 +10,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TASHKENT = pytz.timezone('Asia/Tashkent')
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-GROQ_KEY = os.environ.get('GROQ_API_KEY')
-groq_client = Groq(api_key=GROQ_KEY)
-
+TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'SIZNING_TELEGRAM_TOKENINGIZ')
+GROQ_KEY = os.environ.get('GROQ_API_KEY', 'SIZNING_GROQ_KALITINGIZ')
+8830711295:AAHx8Svjqvsl2G-BOr5hNSoCG2T5LEmA9-E
+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
 managers = {}
 members = {}
 tasks = {}
@@ -56,7 +56,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"/yordam — Yordam",
             parse_mode='Markdown'
         )
-
     elif query.data == 'role_member':
         members[uid] = {'name': name, 'username': user.username or name}
         if uid in managers:
@@ -65,13 +64,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"✅ Siz *Jamoa a'zosi* sifatida ro'yxatdan o'tdingiz!\n\n"
             f"📋 *Buyruqlar:*\n"
             f"/menvazifalar — Mening vazifalarim\n"
-            f"/bajarildi — Vazifani bajarildi deb belgilash\n"
-            f"/jarayonda — Vazifani jarayonda deb belgilash\n"
             f"/sora — AI yordamchi\n"
             f"/yordam — Yordam",
             parse_mode='Markdown'
         )
-
     elif query.data.startswith('status_'):
         parts = query.data.split('_')
         task_id = int(parts[1])
@@ -80,9 +76,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tasks[task_id]['status'] = status
             status_text = {'done': '✅ Bajarildi', 'progress': '🔄 Jarayonda', 'notdone': '❌ Bajarilmadi'}
             tasks[task_id]['updated'] = now_tashkent()
-            await query.edit_message_text(
-                f"Vazifa holati yangilandi: {status_text.get(status, status)}"
-            )
+            await query.edit_message_text(f"Vazifa holati: {status_text.get(status)}")
             for mid in managers:
                 try:
                     await context.bot.send_message(
@@ -103,7 +97,7 @@ async def vazifa(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Bu buyruq faqat menejerlar uchun!")
         return
     if not context.args:
-        await update.message.reply_text("📝 Foydalanish: /vazifa <matn> [muddat: KK.OO.YYYY]")
+        await update.message.reply_text("📝 Foydalanish: /vazifa <matn>")
         return
     text = ' '.join(context.args)
     deadline = None
@@ -111,35 +105,26 @@ async def vazifa(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parts = text.split('muddat:')
         text = parts[0].strip()
         deadline = parts[1].strip()
-
     task_counter[0] += 1
     task_id = task_counter[0]
-    tasks[task_id] = {
-        'text': text, 'deadline': deadline,
-        'status': 'notdone', 'created': now_tashkent(),
-        'by': managers[uid]['name']
-    }
-
+    tasks[task_id] = {'text': text, 'deadline': deadline, 'status': 'notdone', 'created': now_tashkent(), 'by': managers[uid]['name']}
     keyboard = [[
         InlineKeyboardButton("✅ Bajarildi", callback_data=f'status_{task_id}_done'),
         InlineKeyboardButton("🔄 Jarayonda", callback_data=f'status_{task_id}_progress'),
         InlineKeyboardButton("❌ Bajarilmadi", callback_data=f'status_{task_id}_notdone')
     ]]
     sent = 0
-    for mid, mdata in members.items():
+    for mid in members:
         try:
             msg = f"📌 *Yangi vazifa #{task_id}*\n\n{text}"
             if deadline:
                 msg += f"\n\n⏰ *Muddat:* {deadline}"
             msg += f"\n\n👔 *Menejer:* {managers[uid]['name']}\n🕐 *Vaqt:* {now_tashkent()}"
-            await context.bot.send_message(mid, msg, parse_mode='Markdown',
-                                           reply_markup=InlineKeyboardMarkup(keyboard))
+            await context.bot.send_message(mid, msg, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(keyboard))
             sent += 1
         except:
             pass
-    await update.message.reply_text(
-        f"✅ Vazifa {sent} ta a'zoga yuborildi!\n📌 Vazifa #{task_id}: {text}"
-    )
+    await update.message.reply_text(f"✅ Vazifa {sent} ta a'zoga yuborildi!\n📌 Vazifa #{task_id}: {text}")
 
 async def shaxsiy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -157,29 +142,20 @@ async def shaxsiy(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 task_counter[0] += 1
                 task_id = task_counter[0]
-                tasks[task_id] = {
-                    'text': text, 'status': 'notdone',
-                    'created': now_tashkent(), 'by': managers[uid]['name'],
-                    'assigned_to': username
-                }
+                tasks[task_id] = {'text': text, 'status': 'notdone', 'created': now_tashkent(), 'by': managers[uid]['name'], 'assigned_to': username}
                 keyboard = [[
                     InlineKeyboardButton("✅ Bajarildi", callback_data=f'status_{task_id}_done'),
                     InlineKeyboardButton("🔄 Jarayonda", callback_data=f'status_{task_id}_progress'),
                     InlineKeyboardButton("❌ Bajarilmadi", callback_data=f'status_{task_id}_notdone')
                 ]]
-                await context.bot.send_message(
-                    mid,
-                    f"📌 *Shaxsiy vazifa #{task_id}*\n\n{text}\n\n"
-                    f"👔 *Menejer:* {managers[uid]['name']}\n🕐 *Vaqt:* {now_tashkent()}",
-                    parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(keyboard)
-                )
+                await context.bot.send_message(mid, f"📌 *Shaxsiy vazifa #{task_id}*\n\n{text}\n\n👔 *Menejer:* {managers[uid]['name']}\n🕐 *Vaqt:* {now_tashkent()}", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(keyboard))
                 sent = True
             except:
                 pass
     if sent:
         await update.message.reply_text(f"✅ Shaxsiy vazifa @{username} ga yuborildi!")
     else:
-        await update.message.reply_text(f"❌ @{username} topilmadi! /azolar ro'yxatini tekshiring.")
+        await update.message.reply_text(f"❌ @{username} topilmadi!")
 
 async def hammaga(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -193,11 +169,7 @@ async def hammaga(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sent = 0
     for mid in members:
         try:
-            await context.bot.send_message(
-                mid,
-                f"📢 *Menejerdan xabar*\n\n{text}\n\n🕐 {now_tashkent()}",
-                parse_mode='Markdown'
-            )
+            await context.bot.send_message(mid, f"📢 *Menejerdan xabar*\n\n{text}\n\n🕐 {now_tashkent()}", parse_mode='Markdown')
             sent += 1
         except:
             pass
@@ -238,36 +210,30 @@ async def hisobot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     done = sum(1 for t in tasks.values() if t['status'] == 'done')
     progress = sum(1 for t in tasks.values() if t['status'] == 'progress')
     notdone = sum(1 for t in tasks.values() if t['status'] == 'notdone')
-    msg = (
-        f"📊 *Kunlik hisobot*\n"
-        f"🕐 {now_tashkent()}\n\n"
-        f"✅ Bajarildi: {done}\n"
-        f"🔄 Jarayonda: {progress}\n"
-        f"❌ Bajarilmadi: {notdone}\n"
-        f"📌 Jami: {len(tasks)}\n\n"
-        f"👥 Menejerlar: {len(managers)}\n"
-        f"👤 A'zolar: {len(members)}"
+    await update.message.reply_text(
+        f"📊 *Kunlik hisobot*\n🕐 {now_tashkent()}\n\n"
+        f"✅ Bajarildi: {done}\n🔄 Jarayonda: {progress}\n❌ Bajarilmadi: {notdone}\n📌 Jami: {len(tasks)}\n\n"
+        f"👥 Menejerlar: {len(managers)}\n👤 A'zolar: {len(members)}",
+        parse_mode='Markdown'
     )
-    await update.message.reply_text(msg, parse_mode='Markdown')
 
 async def sora(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("📝 Foydalanish: /sora <savol>")
         return
     question = ' '.join(context.args)
-    current_time = now_tashkent()
     try:
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": f"Sen O'zbek va Rus tillarida javob beradigan aqlli yordamchisan. Hozirgi vaqt Toshkent bo'yicha: {current_time}. Qisqa va aniq javob ber."},
+                {"role": "system", "content": f"Sen O'zbek va Rus tillarida javob beradigan aqlli yordamchisan. Hozirgi vaqt Toshkent bo'yicha: {now_tashkent()}. Qisqa va aniq javob ber."},
                 {"role": "user", "content": question}
             ],
             max_tokens=500
         )
         await update.message.reply_text(f"🤖 {response.choices[0].message.content}")
     except Exception as e:
-        await update.message.reply_text("❌ Xatolik yuz berdi. Qaytadan urinib ko'ring.")
+        await update.message.reply_text(f"❌ Xatolik: {str(e)}")
 
 async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -284,22 +250,12 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Ovozli xabar {sent} ta a'zoga yuborildi!")
 
 async def free_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
     text = update.message.text
-    current_time = now_tashkent()
     try:
-        member_list = ', '.join([d['name'] for d in members.values()])
-        system_prompt = (
-            f"Sen jamoa boshqaruv botining AI yordamchisissan. "
-            f"Hozirgi vaqt (Toshkent): {current_time}. "
-            f"Jamoa a'zolari: {member_list if member_list else 'hali yo\'q'}. "
-            f"O'zbek yoki Rus tilida javob ber. "
-            f"Agar foydalanuvchi birovga vazifa yubormoqchi bo'lsa, /shaxsiy buyrug'ini ishlatishni tavsiya qil."
-        )
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": f"Sen jamoa boshqaruv botining AI yordamchisissan. Hozirgi vaqt (Toshkent): {now_tashkent()}. O'zbek yoki Rus tilida javob ber."},
                 {"role": "user", "content": text}
             ],
             max_tokens=500
@@ -311,42 +267,31 @@ async def free_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def yordam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if uid in managers:
-        msg = (
-            "👔 *Menejer buyruqlari:*\n\n"
-            "/vazifa <matn> — Hammaga vazifa\n"
-            "/vazifa <matn> muddat: KK.OO — Muddatli vazifa\n"
-            "/shaxsiy @username <matn> — Shaxsiy vazifa\n"
-            "/hammaga <xabar> — Hammaga xabar\n"
-            "/vazifalar — Barcha vazifalar\n"
-            "/azolar — Jamoa ro'yxati\n"
-            "/hisobot — Hisobot\n"
-            "/sora <savol> — AI yordamchi\n"
-        )
+        msg = ("👔 *Menejer buyruqlari:*\n\n"
+               "/vazifa <matn> — Hammaga vazifa\n"
+               "/vazifa <matn> muddat: KK.OO — Muddatli vazifa\n"
+               "/shaxsiy @username <matn> — Shaxsiy vazifa\n"
+               "/hammaga <xabar> — Hammaga xabar\n"
+               "/vazifalar — Barcha vazifalar\n"
+               "/azolar — Jamoa ro'yxati\n"
+               "/hisobot — Hisobot\n"
+               "/sora <savol> — AI yordamchi\n")
     else:
-        msg = (
-            "👤 *A'zo buyruqlari:*\n\n"
-            "/menvazifalar — Mening vazifalarim\n"
-            "/sora <savol> — AI yordamchi\n"
-            "/yordam — Yordam\n"
-        )
+        msg = ("👤 *A'zo buyruqlari:*\n\n"
+               "/menvazifalar — Mening vazifalarim\n"
+               "/sora <savol> — AI yordamchi\n"
+               "/yordam — Yordam\n")
     await update.message.reply_text(msg, parse_mode='Markdown')
 
 async def menvazifalar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    user_tasks = {tid: t for tid, t in tasks.items()
-                  if 'assigned_to' not in t or
-                  (members.get(uid, {}).get('username', '').lower() == t.get('assigned_to', '').lower())}
+    user_tasks = {tid: t for tid, t in tasks.items()}
     if not user_tasks:
         await update.message.reply_text("📋 Sizga vazifa yuklanmagan.")
         return
     status_map = {'done': '✅', 'progress': '🔄', 'notdone': '❌'}
     msg = "📋 *Sizning vazifalaringiz:*\n\n"
     for tid, t in user_tasks.items():
-        keyboard = [[
-            InlineKeyboardButton("✅", callback_data=f'status_{tid}_done'),
-            InlineKeyboardButton("🔄", callback_data=f'status_{tid}_progress'),
-            InlineKeyboardButton("❌", callback_data=f'status_{tid}_notdone')
-        ]]
         msg += f"{status_map.get(t['status'])} *#{tid}* {t['text']}\n\n"
     await update.message.reply_text(msg, parse_mode='Markdown')
 
