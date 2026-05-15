@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TASHKENT = pytz.timezone('Asia/Tashkent')
-TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAHzPBHPTXMnGdzCCPRDkpaJviLe4FiTUHs')
+TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8830711295:AAGddmJM6qfekQiTL0qgJOewFanPwxDMAIc')
 GROQ_KEY = os.environ.get('GROQ_API_KEY', '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')
 
 managers = {}
